@@ -82,7 +82,7 @@ def create_features_vectors(samples,layer,args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Probing PTLMs for narrative coherence')
+    parser = argparse.ArgumentParser(description='Per layer probing of PTLMs using a SVM, for narrative coherence')
     parser.add_argument('-m', '--model_ckpt',
                       help='the name of the model (checkpoint) used for extracting representations.')
     parser.add_argument('-tr', '--train_file')
