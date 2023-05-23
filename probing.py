@@ -95,15 +95,13 @@ def main():
     parser.add_argument('-od', '--output_dir', 
                       help='absolute path to output directory (including last "/")', default='')
     parser.add_argument('-p', '--output_prob', default=False)
-    parser.add_argument('-e', '--use_event_embeddings', action='store_true', default=False)
     parser.add_argument('-s', '--use_sentence_embeddings', action='store_true', default=True)
     
     args = parser.parse_args()
     args.device = "cuda" if torch.cuda.is_available() else "cpu"
-    args.key = 'event_embedding' if args.use_event_embeddings else 'embedding'
+    args.key = 'event_embedding' if not args.use_sentence_embeddings else 'embedding'
 
     print('\n\nUsing sentence Embeddings:',args.use_sentence_embeddings)
-    print('\nUsing event Embeddings:', args.use_event_embeddings)
     print('\nUsing device:', args.device)
     print('\n\n')
 
