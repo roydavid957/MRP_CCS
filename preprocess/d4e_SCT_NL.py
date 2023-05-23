@@ -33,6 +33,7 @@ def get_data(src_path, model_name, device):
         elif idx+1 == 6:
           translated_story['RandomFifthSentenceQuiz2'] = translated_batch
       translated_stories.append(translated_story)
+    return translated_stories
 
 if __name__ == '__main__':
     model_name = 'Helsinki-NLP/opus-mt-en-nl'
