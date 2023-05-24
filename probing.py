@@ -95,15 +95,15 @@ def main():
     parser.add_argument('-od', '--output_dir', 
                       help='absolute path to output directory (including last "/")', default='')
     parser.add_argument('-p', '--output_prob', default=False)
-    parser.add_argument('-e', '--use_event_embeddings', default=False, help='True for per sentence extracted event embeddings, False for full sentence embeddings')
-    parser.add_argument('-s', '--use_sentence_embeddings', default=False, help='True for per sentence embeddings, False for input as one embedding')
+    parser.add_argument('-e', '--use_event_embeddings', default=False, help='True: extracted event embeddings, False: full sentence embeddings')
+    parser.add_argument('-s', '--use_sentence_embeddings', default=False, help='True: concatenated per sentence embeddings, False: input as one embedding')
     
     args = parser.parse_args()
     args.device = "cuda" if torch.cuda.is_available() else "cpu"
     args.key = 'event_embedding' if args.use_event_embeddings else 'embedding'
 
-    print('\n\nUsing per sentence Embeddings:', str(args.use_sentence_embeddings))
-    print('\nUsing event Embeddings:', str(args.use_event_embeddings))
+    print('\n\nUsing concatenated per sentence Embeddings:', str(args.use_sentence_embeddings))
+    print('\nUsing extracted event Embeddings:', str(args.use_event_embeddings))
     print('\nUsing device:', args.device)
     print('\n\n')
 
