@@ -140,14 +140,15 @@ Create a Sample object from each line of the input file.
 def load_all_samples(src_path:str, args, spacy_model="en_core_web_sm")->list:
     nlp = spacy.load(spacy_model)
     samples = []
+    try:
+      data = pd.read_csv(src_path)
+    except:
+      data = pd.read_csv(src_path,sep='\t')
     if args.data_set.lower() == "sct":
-        data = pd.read_csv(src_path)
         loader = load_sct_story
     elif args.data_set.lower() == "nct":
-        data = pd.read_csv(src_path,sep='\t')
         loader = load_cmcnc_story
     elif args.data_set.lower() == "cmcnc":
-        data = pd.read_csv(src_path,sep='\t')
         loader = load_cmcnc_event
     for idx,row in data.iterrows():
         line_true,line_false=loader(row,nlp)
