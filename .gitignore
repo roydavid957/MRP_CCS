@@ -1,5 +1,8 @@
 requirements.txt
 jobscript*.sh
+*.png
+results/
+*.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
