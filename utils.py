@@ -48,7 +48,7 @@ def get_event_idx(sent,nlp)->int:
   return int([tokens.index(token) for token in tokens if event_idx in token][0])
   # return tokens.index(int(event))
 
-def load_sct_story(line,nlp):
+def load_sct_samples(line,nlp):
   if 'AnswerRightEnding' in line.keys():  # SCT dev
     true_end = line['RandomFifthSentenceQuiz1'] if int(line['AnswerRightEnding']) == 1 else line['RandomFifthSentenceQuiz2']
     false_end = line['RandomFifthSentenceQuiz2'] if true_end == line['RandomFifthSentenceQuiz1'] else line['RandomFifthSentenceQuiz1']
@@ -63,28 +63,21 @@ def load_sct_story(line,nlp):
   line_false = [line['InputStoryid'],[{'sent':line['InputSentence1'],'event':all_event_idx[0]},{'sent':line['InputSentence2'],'event':all_event_idx[1]},{'sent':line['InputSentence3'],'event':all_event_idx[2]},{'sent':line['InputSentence4'],'event':all_event_idx[3]}],{'sent':false_end,'event':all_event_idx[5]},0]
   return line_true,line_false
 
-def load_cmcnc_story(line,nlp):
+def load_nct_samples(line,nlp):
   sentences = [line['Sentence1'],line['Sentence2'],line['Sentence3'],line['Sentence4'],line['Sentence5'],line['RandomFinalSentence']]
   all_event_idx = [get_event_idx(sent,nlp) for sent in sentences]
   line_true = [line['StoryID'],[{'sent':sentences[0],'event':all_event_idx[0]},{'sent':sentences[1],'event':all_event_idx[1]},{'sent':sentences[2],'event':all_event_idx[2]},{'sent':sentences[3],'event':all_event_idx[3]}],{'sent':sentences[4],'event':all_event_idx[4]},1]  # sentence 1-4 as input, 5 as target, label=True
   line_false = [line['StoryID'],[{'sent':sentences[0],'event':all_event_idx[0]},{'sent':sentences[1],'event':all_event_idx[1]},{'sent':sentences[2],'event':all_event_idx[2]},{'sent':sentences[3],'event':all_event_idx[3]}],{'sent':sentences[5],'event':all_event_idx[5]},0] # sentence 1-4 as input, 6 as target, label=False
   return line_true,line_false
 
-def load_cmcnc_event(line,nlp):
+def load_cmcnc_samples(line,nlp):
   input_sentences = line['input'].split('|')
   all_event_idx = [1]*len(input_sentences)
   input_lines = [{'sent': sent+'.', 'event': event} for sent, event in zip(input_sentences, all_event_idx)]
   true_target_line = {'sent': line['target']+'.', 'event': 1}
   line_true = [line['StoryID'],input_lines,true_target_line,1]
-  # line_true = {'StoryID':line['StoryID'],'input':input_sentences,'target':line['target'],'label':1}
-  # sample_true = SampleCMCNC(line_true)
-  # samples.append(sample_true)
   neg_sentences = line['neg'].split('|')
   false_lines = [[line['StoryID'],input_lines,{'sent':sent,'event':1},0] for sent in neg_sentences]
-  # neg_samples = [{'input':input_sentences,'target':sent,'label':0} for sent in neg_sentences]
-  # for line_false in neg_samples:
-  #   sample_false = SampleCMCNC(line_false)
-  #   samples.append(sample_false)
   return line_true,false_lines
 
 class Sentence():
@@ -145,11 +138,11 @@ def load_all_samples(src_path:str, args, spacy_model="en_core_web_sm")->list:
     except:
       data = pd.read_csv(src_path,sep='\t')
     if args.data_set.lower() == "sct":
-        loader = load_sct_story
+        loader = load_sct_samples
     elif args.data_set.lower() == "nct":
-        loader = load_cmcnc_story
+        loader = load_nct_samples
     elif args.data_set.lower() == "cmcnc":
-        loader = load_cmcnc_event
+        loader = load_cmcnc_samples
     for idx,row in data.iterrows():
         line_true,line_false=loader(row,nlp)
         sample_true = Sample(line_true)
