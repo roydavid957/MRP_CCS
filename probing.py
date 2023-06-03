@@ -2,9 +2,9 @@
 import torch
 import argparse
 import numpy as np
-from zipfile import ZipFile
 from transformers import AutoTokenizer, AutoModel, AutoConfig
 from utils import load_all_samples, train_eval
+from sklearn.metrics import classification_report
 
 '''
 Adaptation of code by: 
@@ -142,22 +142,22 @@ def main():
         cls_report, y_pred_proba = train_eval(X_train, y_train, X_test, y_test, prob=args.output_prob)        # SVM training and evaluation
         print(cls_report)
 
-        if y_pred_proba:
+        if y_pred_proba != []:
           # Change the predicted output format
-          res_dict = dict()
-          for sample, y in zip(valid_samples,y_pred_proba):
-              if sample.id in res_dict.keys():                                # Per ID, we get the
-                  res_dict[sample.id][str(sample.label)].append(float(y[1]))  # probabilities of the correct vs. incorrect
-              else:                                                           # final sequence, based on the probability
-                  res_dict[sample.id] = {str(sample.label):[float(y[1])]}     # that an instance is predicted to be true
-          # write reformatted output to zipped file      
-          with open(f"{args.out_dir}answer.txt",'w') as f:
-              f.write('InputStoryid,AnswerRightEnding\n')
-              for idx,pred in res_dict.items(): 
-                y = 1 if (sum(pred['1'])/len(pred['1'])) > (sum(pred['0'])/len(pred['0'])) else 2
-                f.write(f"{idx},{y}\n")
-          with ZipFile(f"{args.out_dir}layer_{layer}.zip", 'w') as myzip:
-              myzip.write(f"{args.out_dir}answer.txt",'answer.txt')
+          y_pred_dict = dict()
+          for sample, y_pred in zip(valid_samples,y_pred_proba):
+              if sample.id in y_pred_dict.keys():
+                  y_pred_dict[sample.id][str(sample.label)] = y_pred
+              else:
+                  y_pred_dict[sample.id] = dict()
+                  y_pred_dict[sample.id][str(sample.label)] = y_pred
+
+          y_pred_list = []
+          for y_probs in y_pred_dict.values():
+              y_pred = 1 if y_probs['1'][1] >= y_probs['0'][1] else 0
+              y_pred_list.append(y_pred)
+          y_true = [1]*len(y_pred_list)
+          print(classification_report(y_true, y_pred_list, output_dict=True))
         
         for label in all_labels:
           if label in cls_report:
