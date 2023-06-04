@@ -94,7 +94,7 @@ def main():
                       help='en/nl for spacy model for event extraction', default='en')
     parser.add_argument('-od', '--output_dir', 
                       help='absolute path to output directory (including last "/")', default='')
-    parser.add_argument('-p', '--output_prob', default=False)
+    # parser.add_argument('-p', '--output_prob', default=False)
     parser.add_argument('-e', '--use_event_embeddings', default=False, help='True: extracted event embeddings, False: full sentence embeddings')
     parser.add_argument('-s', '--use_sentence_embeddings', default=False, help='True: concatenated per sentence embeddings, False: input as one embedding')
     
@@ -131,6 +131,7 @@ def main():
     model_config = AutoConfig.from_pretrained(args.model_ckpt)    
     num_hidden_layers = model_config.num_hidden_layers 
     layers_scores = {label:[] for label in all_labels}
+    layers_scores_proba = {f'{label}_proba':[] for label in all_labels}
 
     for layer in range(1, num_hidden_layers+1):                 # We execute the probing extracting representation from each layer
         print(f'\n\n------ layer {layer} ------\n')
@@ -139,40 +140,49 @@ def main():
           X_test, y_test = create_features_vectors(valid_samples, layer, args)
         else:
           X_test, y_test = [],[]  # empty for k-fold cv
-        cls_report, y_pred_proba = train_eval(X_train, y_train, X_test, y_test, prob=args.output_prob)        # SVM training and evaluation
+        cls_report, y_pred_proba = train_eval(X_train, y_train, X_test, y_test)        # SVM training and evaluation
         print(cls_report)
 
-        if y_pred_proba != []:
-          # Change the predicted output format
-          y_pred_dict = dict()
-          for sample, y_pred in zip(valid_samples,y_pred_proba):
-              if sample.id in y_pred_dict.keys():
-                  y_pred_dict[sample.id][str(sample.label)] = y_pred
-              else:
-                  y_pred_dict[sample.id] = dict()
-                  y_pred_dict[sample.id][str(sample.label)] = y_pred
+        # if args.output_prob:
+        # Change the predicted output format
+        y_pred_dict = dict()
+        for sample, y_pred in zip(valid_samples,y_pred_proba):
+            if sample.id in y_pred_dict.keys():
+                y_pred_dict[sample.id][str(sample.label)] = y_pred
+            else:
+                y_pred_dict[sample.id] = dict()
+                y_pred_dict[sample.id][str(sample.label)] = y_pred
 
-          y_pred_list = []
-          for y_probs in y_pred_dict.values():
-              y_pred = 1 if y_probs['1'][1] >= y_probs['0'][1] else 0
-              y_pred_list.append(y_pred)
-          y_true = [1]*len(y_pred_list)
-          print(classification_report(y_true, y_pred_list, output_dict=True))
+        y_pred_list = []
+        for y_proba in y_pred_dict.values():
+            y_pred = 1 if y_proba['1'][1] >= y_proba['0'][1] else 0
+            y_pred_list.append(y_pred)
+        y_true = [1]*len(y_pred_list)
+
+        cls_report_proba = classification_report(y_true, y_pred_list, output_dict=True)
+        print(cls_report_proba)
+
         
         for label in all_labels:
           if label in cls_report:
             if label == 'accuracy':
               layers_scores[label].append(str(cls_report[label]))
+              layers_scores_proba[f'{label}_proba'].append(str(cls_report_proba[label]))
             else:
               layers_scores[label].append(str(cls_report[label]['f1-score']))
+              layers_scores_proba[f'{label}_proba'].append(str(cls_report_proba[label]['f1-score']))
           elif label == 'accuracy' and valid_samples == []:       # for cross validation scores
              layers_scores[label].append(str(cls_report.mean()))  # computes mean of k-fold cv per layer
+             layers_scores_proba[f'{label}_proba'].append(str(cls_report_proba.mean()))
           else:
               layers_scores[label].append(str(None))
+              layers_scores_proba[f'{label}_proba'].append(str(None))
     
     with open(args.output_file, 'w+') as out_file:                  # The output file will contain a row for each class f1-score and a row for 
         for label in layers_scores:                                 # macro avg, weighted avg and accuracy
-            out_file.write(f'{[label]}\t{layers_scores[label]}\n')  # each row will contain a value for each layer
+            out_file.write(f'{label}\t{layers_scores[label]}\n')  # each row will contain a value for each layer
+        for label in layers_scores_proba:
+            out_file.write(f'{label}\t{layers_scores_proba[label]}\n')
 
 if __name__ == '__main__':
     main()

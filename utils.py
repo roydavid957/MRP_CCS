@@ -49,16 +49,13 @@ def get_event_idx(sent,nlp)->int:
   # return tokens.index(int(event))
 
 def load_sct_samples(line,nlp):
-  if 'AnswerRightEnding' in line.keys():  # SCT dev
-    true_end = line['RandomFifthSentenceQuiz1'] if int(line['AnswerRightEnding']) == 1 else line['RandomFifthSentenceQuiz2']
-    false_end = line['RandomFifthSentenceQuiz2'] if true_end == line['RandomFifthSentenceQuiz1'] else line['RandomFifthSentenceQuiz1']
-  else:                                   # SCT 2018 test
-    print('SCT label column not specified...')
-    exit()
-    # true_end = line['RandomFifthSentenceQuiz1']
-    # false_end = line['RandomFifthSentenceQuiz2']
+  # true_label = int(line[-1])
+  # false_label = 1 if true_label == 2 else 2
+  true_end = line['RandomFifthSentenceQuiz1'] if int(line['AnswerRightEnding']) == 1 else line['RandomFifthSentenceQuiz2']
+  false_end = line['RandomFifthSentenceQuiz2'] if true_end == line['RandomFifthSentenceQuiz1'] else line['RandomFifthSentenceQuiz1']
   sentences = [line['InputSentence1'],line['InputSentence2'],line['InputSentence3'],line['InputSentence4'],true_end,false_end]
   all_event_idx = [get_event_idx(sent,nlp) for sent in sentences]
+
   line_true = [line['InputStoryid'],[{'sent':line['InputSentence1'],'event':all_event_idx[0]},{'sent':line['InputSentence2'],'event':all_event_idx[1]},{'sent':line['InputSentence3'],'event':all_event_idx[2]},{'sent':line['InputSentence4'],'event':all_event_idx[3]}],{'sent':true_end,'event':all_event_idx[4]},1]
   line_false = [line['InputStoryid'],[{'sent':line['InputSentence1'],'event':all_event_idx[0]},{'sent':line['InputSentence2'],'event':all_event_idx[1]},{'sent':line['InputSentence3'],'event':all_event_idx[2]},{'sent':line['InputSentence4'],'event':all_event_idx[3]}],{'sent':false_end,'event':all_event_idx[5]},0]
   return line_true,line_false
@@ -160,20 +157,20 @@ def load_all_samples(src_path:str, args, spacy_model="en_core_web_sm")->list:
 '''
 SVM training and evaluation.
 '''
-def train_eval(X_train, y_train, X_test, y_test, prob=False):
+def train_eval(X_train, y_train, X_test, y_test):
 
     scaler = MinMaxScaler()
     
     scaled_X_train = scaler.fit_transform(X_train)  # Scaling must be applied both to training and evaluation set using the same scale
 
     clf = LinearSVC(max_iter=50000, dual=False)
-    clf = CalibratedClassifierCV(clf) if prob else clf   # enables LinearSVC to output probabilities
+    clf = CalibratedClassifierCV(clf)   # enables LinearSVC to output probabilities
 
     if X_test:
       scaled_X_test = scaler.transform(X_test)
       clf.fit(scaled_X_train, y_train)
       y_pred = clf.predict(scaled_X_test)
-      y_pred_proba = clf.predict_proba(scaled_X_test) if prob else []
+      y_pred_proba = clf.predict_proba(scaled_X_test)
       return classification_report(y_test, y_pred, output_dict=True), y_pred_proba
     else:
       return cross_val_score(clf, scaled_X_train, y_train, cv=5), []
