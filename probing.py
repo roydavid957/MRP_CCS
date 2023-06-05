@@ -4,7 +4,7 @@ import argparse
 import numpy as np
 from transformers import AutoTokenizer, AutoModel, AutoConfig
 from utils import load_all_samples, train_eval
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, accuracy_score
 
 '''
 Adaptation of code by: 
@@ -145,38 +145,67 @@ def main():
 
         # if args.output_prob:
         # Change the predicted output format
-        y_pred_dict = dict()
-        for sample, y_pred in zip(valid_samples,y_pred_proba):
-            if sample.id in y_pred_dict.keys():
-                y_pred_dict[sample.id][str(sample.label)] = y_pred
-            else:
-                y_pred_dict[sample.id] = dict()
-                y_pred_dict[sample.id][str(sample.label)] = y_pred
+        if args.test_file == '':        # for cv we do this per fold
+          cls_report_proba = []
+          for fold in y_pred_proba:
+              y_pred_dict = dict()    # get the possible final sequence (PFS) probabilities
+                                      # per story (ID)
+              for sample, y_pred in zip(np.array(train_samples)[fold['X']],fold['Y']):
+                  if sample.id in y_pred_dict.keys():
+                      y_pred_dict[sample.id][str(sample.label)] = y_pred
+                  else:
+                      y_pred_dict[sample.id] = dict()
+                      y_pred_dict[sample.id][str(sample.label)] = y_pred
 
-        y_pred_list = []
-        for y_proba in y_pred_dict.values():
-            y_pred = 1 if y_proba['1'][1] >= y_proba['0'][1] else 0
-            y_pred_list.append(y_pred)
-        y_true = [1]*len(y_pred_list)
+              y_pred_list = []
+              for y_proba in y_pred_dict.values():
+                  if len(y_proba.keys()) >1 and '0':  # for cv, because of the fold's data splits
+                                                      # exclude instance(s) with one PFS
+                      y_pred = 1 if y_proba['1'][1] >= y_proba['0'][1] else 0     # Choose PFS
+                      y_pred_list.append(y_pred)
+              y_true = [1]*len(y_pred_list)
+              # cls_report_proba = classification_report(y_true, y_pred_list, output_dict=True)
+              cls_report_proba.append(accuracy_score(y_true, y_pred_list))
+        else:
+          y_pred_dict = dict()
+          for sample, y_pred in zip(valid_samples,y_pred_proba):
+              if sample.id in y_pred_dict.keys():
+                  y_pred_dict[sample.id][str(sample.label)] = y_pred
+              else:
+                  y_pred_dict[sample.id] = dict()
+                  y_pred_dict[sample.id][str(sample.label)] = y_pred
 
-        cls_report_proba = classification_report(y_true, y_pred_list, output_dict=True)
+          y_pred_list = []
+          for y_proba in y_pred_dict.values():
+              y_pred = 1 if y_proba['1'][1] >= y_proba['0'][1] else 0
+              y_pred_list.append(y_pred)
+          y_true = [1]*len(y_pred_list)
+
+          cls_report_proba = classification_report(y_true, y_pred_list, output_dict=True)
         print(cls_report_proba)
 
         
         for label in all_labels:
-          if label in cls_report:
-            if label == 'accuracy':
-              layers_scores[label].append(str(cls_report[label]))
-              layers_scores_proba[f'{label}_proba'].append(str(cls_report_proba[label]))
+            if label in cls_report:
+                if label == 'accuracy':
+                    layers_scores[label].append(str(cls_report[label]))
+                else:
+                    layers_scores[label].append(str(cls_report[label]['f1-score']))
+            elif label == 'accuracy' and valid_samples == []:       # for cross validation scores
+                layers_scores[label].append(str(np.array(cls_report).mean()))  # computes mean of k-fold cv per layer
             else:
-              layers_scores[label].append(str(cls_report[label]['f1-score']))
-              layers_scores_proba[f'{label}_proba'].append(str(cls_report_proba[label]['f1-score']))
-          elif label == 'accuracy' and valid_samples == []:       # for cross validation scores
-             layers_scores[label].append(str(cls_report.mean()))  # computes mean of k-fold cv per layer
-             layers_scores_proba[f'{label}_proba'].append(str(cls_report_proba.mean()))
-          else:
-              layers_scores[label].append(str(None))
-              layers_scores_proba[f'{label}_proba'].append(str(None))
+                layers_scores[label].append(str(None))
+
+        for label in all_labels:
+              if label in cls_report_proba:
+                  if label == 'accuracy':
+                      layers_scores_proba[f'{label}_proba'].append(str(cls_report_proba[label]))
+                  else:
+                      layers_scores_proba[f'{label}_proba'].append(str(cls_report_proba[label]['f1-score']))
+              elif label == 'accuracy' and valid_samples == []:       # for cross validation scores
+                  layers_scores_proba[f'{label}_proba'].append(str(np.array(cls_report_proba).mean()))
+              else:
+                  layers_scores_proba[f'{label}_proba'].append(str(None))
     
     with open(args.output_file, 'w+') as out_file:                  # The output file will contain a row for each class f1-score and a row for 
         for label in layers_scores:                                 # macro avg, weighted avg and accuracy
