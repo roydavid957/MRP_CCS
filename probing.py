@@ -184,7 +184,7 @@ def main():
           cls_report_proba = classification_report(y_true, y_pred_list, output_dict=True)
           print(cls_report_proba)
 
-          if args.dataset == 'sct':
+          if args.data_set == 'sct':
             y_pred_list_og = []
             for y_proba, label in zip(y_pred_dict.values(), valid_labels):
                 true_label = 1 if int(label) == 1 else 2
