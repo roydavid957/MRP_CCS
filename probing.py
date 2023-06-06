@@ -108,11 +108,11 @@ def main():
     print('\n\n')
 
     spacy_model = "en_core_web_sm" if args.lang == 'en' else "nl_core_news_sm"
-    train_samples, labels_list = load_all_samples(args.train_file, args, spacy_model)        # Loading of train and test samples from
+    train_samples, labels_list, train_labels = load_all_samples(args.train_file, args, spacy_model)        # Loading of train and test samples from
     if args.test_file == '':
        valid_samples, test_label_list = [], labels_list # empty for k-fold cv
     else:
-      valid_samples, test_label_list = load_all_samples(args.test_file, args, spacy_model)   # train and test source files
+      valid_samples, test_label_list, valid_labels = load_all_samples(args.test_file, args, spacy_model)   # train and test source files
     all_labels = list(set(test_label_list).union(set(labels_list)))
 
     model_config = AutoConfig.from_pretrained(args.model_ckpt)    
@@ -180,9 +180,17 @@ def main():
               y_pred = 1 if y_proba['1'][1] >= y_proba['0'][1] else 0
               y_pred_list.append(y_pred)
           y_true = [1]*len(y_pred_list)
-
           cls_report_proba = classification_report(y_true, y_pred_list, output_dict=True)
-        print(cls_report_proba)
+          print(cls_report_proba)
+
+          if args.dataset == 'sct':
+            y_pred_list_og = []
+            for y_proba, label in zip(y_pred_dict.values(), valid_labels):
+                true_label = 1 if int(label) == 1 else 2
+                false_label = 2 if true_label == 1 else 1
+                y_pred_og = true_label if y_proba['1'][1] >= y_proba['0'][1] else false_label
+                y_pred_list_og.append(y_pred_og)
+            print(classification_report(valid_labels, y_pred_list_og, output_dict=True))
 
         
         for label in all_labels:

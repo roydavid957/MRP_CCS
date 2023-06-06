@@ -153,7 +153,8 @@ def load_all_samples(src_path:str, args, spacy_model="en_core_web_sm")->list:
           sample_false = Sample(line_false)
           samples.append(sample_false)
     label_list = set(sample.label for sample in samples)
-    return samples, list(label_list)
+    labels = data['AnswerRightEnding'] if args.data_set.lower() == "sct" else []    # save correct labels for evaluation
+    return samples, list(label_list), labels
 
 '''
 SVM training and evaluation.
