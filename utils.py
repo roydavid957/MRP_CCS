@@ -173,6 +173,7 @@ def train_eval(X_train, y_train, X_test, y_test):
       clf.fit(scaled_X_train, y_train)
       y_pred = clf.predict(scaled_X_test)
       y_pred_proba = clf.predict_proba(scaled_X_test)
+      print(classification_report(y_test, y_pred))
       return classification_report(y_test, y_pred, output_dict=True), y_pred_proba
     else:
       folds = []
