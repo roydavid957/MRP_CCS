@@ -1,11 +1,12 @@
 import re
 import pandas as pd
 import spacy
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, accuracy_score
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.svm import LinearSVC
 from sklearn.calibration import CalibratedClassifierCV
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_score, StratifiedKFold
+import numpy as np
 
 def get_verbs(doc,vb=False)->list:
   if vb:
@@ -173,4 +174,21 @@ def train_eval(X_train, y_train, X_test, y_test):
       y_pred_proba = clf.predict_proba(scaled_X_test)
       return classification_report(y_test, y_pred, output_dict=True), y_pred_proba
     else:
-      return cross_val_score(clf, scaled_X_train, y_train, cv=5), []
+      folds = []
+      acc_score_list = []
+      skf = StratifiedKFold(n_splits=5)
+      for train_index, test_index in skf.split(scaled_X_train, np.array(y_train)):
+        x_train_fold, y_train_fold = scaled_X_train[train_index], np.array(y_train)[train_index]
+        x_test_fold, y_test_fold = scaled_X_train[test_index], np.array(y_train)[test_index]
+
+        clf.fit(x_train_fold, y_train_fold)
+        y_pred = clf.predict(x_test_fold)
+
+        acc_score_list.append(accuracy_score(y_test_fold, y_pred))
+        y_pred_proba = clf.predict_proba(x_test_fold)
+        folds.append({'X': test_index, 'Y': y_pred_proba})
+
+    #   print(acc_score_list)
+    #   print(cross_val_score(clf, vectorized_X_train, y_train, cv=5))
+      return acc_score_list, folds
+      # return cross_val_score(clf, scaled_X_train, y_train, cv=5), []
