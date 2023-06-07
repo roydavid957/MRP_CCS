@@ -177,8 +177,8 @@ def main():
 
           y_pred_list = []
           for y_proba in y_pred_dict.values():
-              # y_pred = 1 if y_proba['1'][1] >= y_proba['0'][1] else 0
-              y_pred = 0 if y_proba['0'][1] >= y_proba['1'][1] else 1
+              y_pred = 1 if y_proba['1'][1] >= y_proba['0'][1] else 0
+              # y_pred = 0 if y_proba['0'][1] >= y_proba['1'][1] else 1
               y_pred_list.append(y_pred)
           y_true = [1]*len(y_pred_list)
           print(classification_report(y_true, y_pred_list))
@@ -190,8 +190,8 @@ def main():
             for y_proba, label in zip(y_pred_dict.values(), valid_labels):
                 true_label = 1 if int(label) == 1 else 2
                 false_label = 2 if true_label == 1 else 1
-                # y_pred_og = true_label if y_proba['1'][1] >= y_proba['0'][1] else false_label
-                y_pred_og = false_label if y_proba['0'][1] >= y_proba['1'][1] else true_label
+                y_pred_og = true_label if y_proba['1'][1] >= y_proba['0'][1] else false_label
+                # y_pred_og = false_label if y_proba['0'][1] >= y_proba['1'][1] else true_label
                 y_pred_list_og.append(y_pred_og)
             print(classification_report(valid_labels, y_pred_list_og))
             print(classification_report(valid_labels, y_pred_list_og, output_dict=True))
