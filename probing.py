@@ -224,6 +224,7 @@ def main():
             out_file.write(f'{label}\t{layers_scores[label]}\n')  # each row will contain a value for each layer
         for label in layers_scores_proba:
             out_file.write(f'{label}\t{layers_scores_proba[label]}\n')
+    print(args.output_file)
 
 if __name__ == '__main__':
     main()
