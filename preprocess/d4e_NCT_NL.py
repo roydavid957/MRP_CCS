@@ -39,4 +39,4 @@ if __name__ == '__main__':
     model_name = 'Helsinki-NLP/opus-mt-en-nl'
     device = "cuda" if torch.cuda.is_available() else "cpu"
     df = pd.DataFrame(get_data(sys.argv[1], model_name, device))
-    df.to_csv(sys.argv[2],index=False)
+    df.to_csv(sys.argv[2],index=False,sep='\t')
