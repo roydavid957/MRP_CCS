@@ -16,14 +16,14 @@ Filter stories containing human protagonist
 in object or subject position
 from NCT Full stories
 '''
-def get_data(src_path: str,spacy_model="en_core_web_sm") -> list[dict]:
+def get_data(src_path: str,spacy_model="en_core_web_sm"):
     data = pd.read_csv(src_path,sep='\t')
     nlp = spacy.load(spacy_model)
     
     story_list_dict = []
-    for idx, row in tqdm(data.iterrows(),total=data.shape[0]):
+    for idx, row in data.iterrows():
         add=False
-        story = row[1:5]
+        story = list(row[1:5])
         if int(row[-1]) == 1:       # add correct continuation
             story.append(row[-3])
         elif int(row[-1]) == 2:

@@ -3,7 +3,7 @@ import pandas as pd
 from tqdm import tqdm
 import sys
 
-def get_data(path:str,n=5,s=2023)   :
+def get_data(path:str,n=6,s=2023):      # n=6 to keep it consistent with NCT_alt
     np.random.seed(s)
 
     with open(path,'r') as f:
