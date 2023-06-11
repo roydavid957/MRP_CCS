@@ -165,7 +165,6 @@ def main():
               y_true = [1]*len(y_pred_list)
               # cls_report_proba = classification_report(y_true, y_pred_list, output_dict=True)
               cls_report_proba.append(accuracy_score(y_true, y_pred_list))
-          print(cls_report_proba)
         else:
           y_pred_dict = dict()
           for sample, y_pred in zip(valid_samples,y_pred_proba):
@@ -200,6 +199,8 @@ def main():
               y_pred_list_og.append(y_pred_og)
           print(classification_report(valid_labels, y_pred_list_og))
           # print(classification_report(valid_labels, y_pred_list_og, output_dict=True))
+        
+        print(cls_report_proba)
 
         
         for label in all_labels:
