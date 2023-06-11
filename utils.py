@@ -149,14 +149,14 @@ def load_all_samples(src_path:str, args, spacy_model="en_core_web_sm"):
     except:
       data = pd.read_csv(src_path,sep='\t')
 
-    # if args.data_set.lower() == "sct":
-    #     loader = load_sct_samples
-    # elif args.data_set.lower() == "nct":
-    #     loader = load_nct_samples
-    # elif args.data_set.lower() == "cmcnc":
-    #     loader = load_cmcnc_samples
+    if args.data_set.lower() == "sct":
+        loader = load_sct_samples
+    elif args.data_set.lower() == "nct":
+        loader = load_nct_samples
+    elif args.data_set.lower() == "cmcnc":
+        loader = load_cmcnc_samples
 
-    loader = load_samples    
+    # loader = load_samples    
     for idx,row in data.iterrows():
         line_true,line_false=loader(row,nlp)
         sample_true = Sample(line_true)
