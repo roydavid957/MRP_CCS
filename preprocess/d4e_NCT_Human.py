@@ -23,7 +23,12 @@ def get_data(src_path: str,spacy_model="en_core_web_sm") -> list[dict]:
     story_list_dict = []
     for idx, row in tqdm(data.iterrows(),total=data.shape[0]):
         add=False
-        story = [row['Sentence1'],row['Sentence2'],row['Sentence3'],row['Sentence4'],row['Sentence5']]
+        story = row[1:5]
+        if int(row[-1]) == 1:       # add correct continuation
+            story.append(row[-3])
+        elif int(row[-1]) == 2:
+            story.append(row[-2])
+        # story = [row['Sentence1'],row['Sentence2'],row['Sentence3'],row['Sentence4'],row['Sentence5']]
         for sentence in story:
             doc = nlp(sentence)
             if get_prot(doc):
