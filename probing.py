@@ -143,9 +143,8 @@ def main():
         cls_report, y_pred_proba = train_eval(X_train, y_train, X_test, y_test)        # SVM training and evaluation
         print(cls_report)
 
-        # if args.output_prob:
         # Change the predicted output format
-        if args.test_file == '':        # for cv we do this per fold
+        if args.test_file == '':        # per fold for cv
           cls_report_proba = []
           for fold in y_pred_proba:
               y_pred_dict = dict()    # get the possible final sequence (PFS) probabilities
@@ -166,6 +165,7 @@ def main():
               y_true = [1]*len(y_pred_list)
               # cls_report_proba = classification_report(y_true, y_pred_list, output_dict=True)
               cls_report_proba.append(accuracy_score(y_true, y_pred_list))
+          print(cls_report_proba)
         else:
           y_pred_dict = dict()
           for sample, y_pred in zip(valid_samples,y_pred_proba):
@@ -175,6 +175,9 @@ def main():
                   y_pred_dict[sample.id] = dict()
                   y_pred_dict[sample.id][str(sample.label)] = y_pred
 
+          # cls report using imbalanced labels
+          # i.e. only correct label being 1
+          # only for eval
           y_pred_list = []
           for y_proba in y_pred_dict.values():
               y_pred = 1 if y_proba['1'][1] >= y_proba['0'][1] else 0
@@ -183,18 +186,20 @@ def main():
           y_true = [1]*len(y_pred_list)
           print(classification_report(y_true, y_pred_list))
           cls_report_proba = classification_report(y_true, y_pred_list, output_dict=True)
+          # print(cls_report_proba)
 
-          if args.data_set.lower() == 'sct':
-            y_pred_list_og = []
-            for y_proba, label in zip(y_pred_dict.values(), valid_labels):
-                true_label = 1 if int(label) == 1 else 2
-                false_label = 2 if true_label == 1 else 1
-                y_pred_og = true_label if y_proba['1'][1] >= y_proba['0'][1] else false_label
-                # y_pred_og = false_label if y_proba['0'][1] >= y_proba['1'][1] else true_label
-                y_pred_list_og.append(y_pred_og)
-            print(classification_report(valid_labels, y_pred_list_og))
-            print(classification_report(valid_labels, y_pred_list_og, output_dict=True))
-        print(cls_report_proba)
+          # cls report using original (balanced) labels
+          # i.e. correct can be label 1 or 2
+          # only for eval as a check for imbalanced cls report
+          y_pred_list_og = []
+          for y_proba, label in zip(y_pred_dict.values(), valid_labels):
+              true_label = 1 if int(label) == 1 else 2
+              false_label = 2 if true_label == 1 else 1
+              y_pred_og = true_label if y_proba['1'][1] >= y_proba['0'][1] else false_label
+              # y_pred_og = false_label if y_proba['0'][1] >= y_proba['1'][1] else true_label
+              y_pred_list_og.append(y_pred_og)
+          print(classification_report(valid_labels, y_pred_list_og))
+          # print(classification_report(valid_labels, y_pred_list_og, output_dict=True))
 
         
         for label in all_labels:
