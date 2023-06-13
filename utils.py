@@ -63,7 +63,7 @@ def load_sct_samples(line,nlp):
 
 def load_nct_samples(line,nlp):
   true_end = line['Continuation1'] if int(line['Label']) == 1 else line['Continuation2']
-  false_end = line['Continuation2'] if int(line['Label']) == 2 else line['Continuation1']
+  false_end = line['Continuation2'] if int(line['Label']) == 1 else line['Continuation1']
   sentences = [line['Sentence1'],line['Sentence2'],line['Sentence3'],line['Sentence4'],true_end,false_end]
   all_event_idx = [get_event_idx(sent,nlp) for sent in sentences]
   line_true = [line['StoryID'],[{'sent':sentences[0],'event':all_event_idx[0]},{'sent':sentences[1],'event':all_event_idx[1]},{'sent':sentences[2],'event':all_event_idx[2]},{'sent':sentences[3],'event':all_event_idx[3]}],{'sent':true_end,'event':all_event_idx[4]},1]  # sentence 1-4 as input, 5 as target, label=True
@@ -72,9 +72,9 @@ def load_nct_samples(line,nlp):
 
 def load_samples(line, nlp):
   # Format:
-  # ID, Sent1, Sent2, Sent3, Sent4, Opt1, Opt2, Label
+  # ID, Sent1, Sent2, Sent3, Sent4, Opt1, Opt2, Label(1,2)
   true_end = line[-3] if int(line[-1]) == 1 else line[-2]
-  false_end = line[-2] if int(line[-1]) == 2 else line[-3]
+  false_end = line[-2] if int(line[-1]) == 1 else line[-3]
   sentences = [line[1],line[2],line[3],line[4],true_end,false_end]
   all_event_idx = [get_event_idx(sent,nlp) for sent in sentences]
   line_true = [line[0],[{'sent':sentences[0],'event':all_event_idx[0]},{'sent':sentences[1],'event':all_event_idx[1]},{'sent':sentences[2],'event':all_event_idx[2]},{'sent':sentences[3],'event':all_event_idx[3]}],{'sent':true_end,'event':all_event_idx[4]},1]  # sentence 1-4 as input, 5 as target, label=True
@@ -149,14 +149,15 @@ def load_all_samples(src_path:str, args, spacy_model="en_core_web_sm"):
     except:
       data = pd.read_csv(src_path,sep='\t')
 
-    if args.data_set.lower() == "sct":
-        loader = load_sct_samples
-    elif args.data_set.lower() == "nct":
-        loader = load_nct_samples
-    elif args.data_set.lower() == "cmcnc":
+    if args.data_set.lower() == "cmcnc":
         loader = load_cmcnc_samples
+    # elif args.data_set.lower() == "sct":
+    #     loader = load_sct_samples
+    # elif args.data_set.lower() == "nct":
+    #     loader = load_nct_samples
 
-    # loader = load_samples    
+    else:
+      loader = load_samples    
     for idx,row in data.iterrows():
         line_true,line_false=loader(row,nlp)
         sample_true = Sample(line_true)

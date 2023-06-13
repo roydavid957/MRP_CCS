@@ -107,6 +107,8 @@ def main():
     print('\nUsing device:', args.device)
     print('\n\n')
 
+    np.random.seed(2023)    # Reproducability
+
     spacy_model = "en_core_web_sm" if args.lang == 'en' else "nl_core_news_sm"
     train_samples, labels_list, train_labels = load_all_samples(args.train_file, args, spacy_model)        # Loading of train and test samples from
     if args.test_file == '':
@@ -118,8 +120,9 @@ def main():
     # Check
     # print(train_samples[0])
     # print(train_samples[1])
-    # print('\n',valid_samples[0])
+    # print(f'\n{valid_samples[0]}')
     # print(valid_samples[1])
+    # exit()
 
     model_config = AutoConfig.from_pretrained(args.model_ckpt)    
     args.num_hidden_layers = model_config.num_hidden_layers
@@ -128,9 +131,10 @@ def main():
     if valid_samples:
        extract_samples_representations(valid_samples, args)
 
-    # max_len_dev = max([len(np.concatenate(x.representation[1][f"input_{args.key}"]+[x.representation[1][f"target_{args.key}"]])) for x in train_samples])                           # get the max length
-    # max_len_test = max([len(np.concatenate(x.representation[1][f"input_{args.key}"]+[x.representation[1][f"target_{args.key}"]])) for x in valid_samples]) if valid_samples else 0  # for padding the (CMCNC) inputs 
-    # args.max_len = max_len_dev if max_len_dev >= max_len_test else max_len_test                                                                                                     # for the SVM inputs
+    if args.data_set.lower() == 'cmcnc':
+      max_len_dev = max([len(np.concatenate(x.representation[1][f"input_{args.key}"]+[x.representation[1][f"target_{args.key}"]])) for x in train_samples])                           # get the max length
+      max_len_test = max([len(np.concatenate(x.representation[1][f"input_{args.key}"]+[x.representation[1][f"target_{args.key}"]])) for x in valid_samples]) if valid_samples else 0  # for padding the (CMCNC) inputs 
+      args.max_len = max_len_dev if max_len_dev >= max_len_test else max_len_test                                                                                                     # for the SVM inputs
 
     all_labels += ['macro avg', 'weighted avg', 'accuracy']
     
@@ -166,7 +170,13 @@ def main():
               for y_proba in y_pred_dict.values():
                   if len(y_proba.keys()) >1 and '0':  # for cv, because of the fold's data splits
                                                       # exclude instance(s) with one PFS
-                      y_pred = 1 if y_proba['1'][1] >= y_proba['0'][1] else 0     # Choose PFS
+                      if y_proba['1'][1] == y_proba['0'][1]:
+                         y_pred = int(np.random.choice([0,1]))
+                      elif y_proba['1'][1] > y_proba['0'][1]:
+                         y_pred = 1
+                      elif y_proba['1'][1] < y_proba['0'][1]:
+                         y_pred = 0
+                      # y_pred = 1 if y_proba['1'][1] >= y_proba['0'][1] else 0     # Choose PFS
                       y_pred_list.append(y_pred)
               y_true = [1]*len(y_pred_list)
               # cls_report_proba = classification_report(y_true, y_pred_list, output_dict=True)
@@ -185,7 +195,13 @@ def main():
           # only for eval
           y_pred_list = []
           for y_proba in y_pred_dict.values():
-              y_pred = 1 if y_proba['1'][1] >= y_proba['0'][1] else 0
+              if y_proba['1'][1] == y_proba['0'][1]:
+                  y_pred = int(np.random.choice([0,1]))
+              elif y_proba['1'][1] > y_proba['0'][1]:
+                  y_pred = 1
+              elif y_proba['1'][1] < y_proba['0'][1]:
+                  y_pred = 0
+              # y_pred = 1 if y_proba['1'][1] >= y_proba['0'][1] else 0
               # y_pred = 0 if y_proba['0'][1] >= y_proba['1'][1] else 1
               y_pred_list.append(y_pred)
           y_true = [1]*len(y_pred_list)
@@ -195,11 +211,17 @@ def main():
 
           # cls report using original (balanced) labels
           # i.e. correct can be label 1 or 2
-          # only for eval as a check for imbalanced cls report
+          # only for eval as a check
           y_pred_list_og = []
           for y_proba, label in zip(y_pred_dict.values(), valid_labels):
               true_label = 1 if int(label) == 1 else 2
-              false_label = 2 if true_label == 1 else 1
+              false_label = 2 if int(label) == 1 else 1
+              if y_proba['1'][1] == y_proba['0'][1]:
+                  y_pred_og = int(np.random.choice([0,1]))
+              elif y_proba['1'][1] > y_proba['0'][1]:
+                  y_pred_og = 1
+              elif y_proba['1'][1] < y_proba['0'][1]:
+                  y_pred_og = 0
               y_pred_og = true_label if y_proba['1'][1] >= y_proba['0'][1] else false_label
               # y_pred_og = false_label if y_proba['0'][1] >= y_proba['1'][1] else true_label
               y_pred_list_og.append(y_pred_og)
