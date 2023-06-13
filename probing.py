@@ -115,6 +115,12 @@ def main():
       valid_samples, test_label_list, valid_labels = load_all_samples(args.test_file, args, spacy_model)   # train and test source files
     all_labels = list(set(test_label_list).union(set(labels_list)))
 
+    # Check
+    # print(train_samples[0])
+    # print(train_samples[1])
+    # print('\n',valid_samples[0])
+    # print(valid_samples[1])
+
     model_config = AutoConfig.from_pretrained(args.model_ckpt)    
     args.num_hidden_layers = model_config.num_hidden_layers
 
@@ -122,9 +128,9 @@ def main():
     if valid_samples:
        extract_samples_representations(valid_samples, args)
 
-    max_len_dev = max([len(np.concatenate(x.representation[1][f"input_{args.key}"]+[x.representation[1][f"target_{args.key}"]])) for x in train_samples])                           # get the max length
-    max_len_test = max([len(np.concatenate(x.representation[1][f"input_{args.key}"]+[x.representation[1][f"target_{args.key}"]])) for x in valid_samples]) if valid_samples else 0  # for padding the (CMCNC) inputs 
-    args.max_len = max_len_dev if max_len_dev >= max_len_test else max_len_test                                                                                                     # for the SVM inputs
+    # max_len_dev = max([len(np.concatenate(x.representation[1][f"input_{args.key}"]+[x.representation[1][f"target_{args.key}"]])) for x in train_samples])                           # get the max length
+    # max_len_test = max([len(np.concatenate(x.representation[1][f"input_{args.key}"]+[x.representation[1][f"target_{args.key}"]])) for x in valid_samples]) if valid_samples else 0  # for padding the (CMCNC) inputs 
+    # args.max_len = max_len_dev if max_len_dev >= max_len_test else max_len_test                                                                                                     # for the SVM inputs
 
     all_labels += ['macro avg', 'weighted avg', 'accuracy']
     
