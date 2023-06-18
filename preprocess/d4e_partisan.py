@@ -6,13 +6,15 @@ import numpy as np
 import pandas as pd
 import torch
 
-def get_prot(doc):
-    nsubj = [str(tok) for tok in doc if tok.dep_ == "subj" in tok.dep_ or "obj" in tok.dep_ or "nmod" in tok.dep_]
-    ents = [str(ent) for ent in doc.ents if ent.label_ == "PERSON"]
-    if len(set(nsubj).intersection(set(ents))) > 0:
-        return True
-    else:
-        return False
+def get_sentences(doc):
+    punct_list = ['.', '?', '!']
+    sentences = list(doc.sents)
+    for idx, sent in sentences:
+        if sent[-1] not in punct_list:
+            new_sent = (' ').join([sent,sentences[idx+1]])
+            sentences[idx] = new_sent.replace('  ', ' ')
+            del sentences[idx+1]
+    return sentences
 
 '''
 Extract data following a protagonist
@@ -42,7 +44,6 @@ def get_data(src_path):
                                         , "model_name": model_name
                                         , "device": device
                                         })
-    
     with open(src_path,'r') as f:
         
         for line in f:
@@ -50,45 +51,52 @@ def get_data(src_path):
             try:
                 doc = nlp(line['text'])
                 if len(list(doc.sents)) >= n:
+                    sentences = get_sentences(doc)
+                    if len(sentences) >= n:
 
-                    # print('\nCoref clusters:',doc._.coref_clusters)
-                    # print('\nCoref text:',doc._.resolved_text)
-                    # print('\nCoref heads:',doc._.cluster_heads)
+                        # print('\nCoref clusters:',doc._.coref_clusters)
+                        # print('\nCoref text:',doc._.resolved_text)
+                        # print('\nCoref heads:',doc._.cluster_heads)
 
-                    doc2 = nlp(doc._.resolved_text)
-                    nsubj = [str(tok) for tok in doc2 if tok.dep_ == "subj" in tok.dep_ or "obj" in tok.dep_ or "nmod" in tok.dep_]
-                    ents = [str(ent) for ent in doc2.ents if ent.label_ == "PERSON"]
-                    # print('\nEntities:',ents)
-                    # print('\nsubj/obj:',nsubj)
-                    overlap = list(set([ent for subj in nsubj for ent in ents if subj in ent]))
-                    # print('\nOverlap:',overlap)
-                    over_sents = list(set([idx for idx, sent in enumerate(list(doc2.sents)) for ent in overlap if ent in str(sent)]))
-                    # print('\nSents:',over_sents)
-                    if len(set(over_sents).intersection(set([0,1,2,3,4]))) > 0 and str(list(doc.sents)[n-2]).endswith('.'):
-                        story_id = line['id']
-                        sentences = [str(sent) for sent in doc.sents]
-                        # cutoff = n-1 if sentences[n-2].endswith('.') else n
+                        coref_doc = nlp(doc._.resolved_text)
+                        nsubj = [str(tok) for tok in coref_doc if tok.dep_ == "subj" in tok.dep_ or "obj" in tok.dep_ or "nmod" in tok.dep_]
+                        ents = [str(ent) for ent in coref_doc.ents if ent.label_ == "PERSON"]
+                        # print('\nEntities:',ents)
+                        # print('\nsubj/obj:',nsubj)
+                        overlap = list(set([ent for subj in nsubj for ent in ents if subj in ent]))
+                        # print('\nOverlap:',overlap)
+                        coref_sentences = get_sentences(coref_doc)
+                        over_sents = list(set([idx for idx, sent in enumerate(coref_sentences) for ent in overlap if ent in str(sent)]))
+                        # print('\nSents:',over_sents)
+                        if len(set(over_sents).intersection(set([0,1,2,3,4]))) > 0:
+                            story_id = line['id']
+                            sentences = [str(sent) for sent in doc.sents]
+                            # cutoff = n-1 if sentences[n-2].endswith('.') else n
 
-                        last_sents = sentences[n-1:]
-                        rand_sent = np.random.choice(last_sents)
-                        label = np.random.choice([1,2])
-                        if label == 1:
-                            opt1 = sentences[n-2]
-                            opt2 = rand_sent
-                        elif label == 2:
-                            opt2 = sentences[n-2]
-                            opt1 = rand_sent
+                            last_sents = sentences[n-1:]
+                            rand_sent = np.random.choice(last_sents)
+                            while len(rand_sent.split(' ')) < 2:
+                                rand_sent = np.random.choice(last_sents)
+                            label = np.random.choice([1,2])
+                            if label == 1:
+                                opt1 = sentences[n-2]
+                                opt2 = rand_sent
+                            elif label == 2:
+                                opt2 = sentences[n-2]
+                                opt1 = rand_sent
 
-                        story_list_dict.append({'StoryID':story_id,
-                                                'Sentence1':sentences[0],
-                                                'Sentence2':sentences[1],
-                                                'Sentence3':sentences[2],
-                                                'Sentence4':sentences[3],
-                                                'Continuation1':opt1,
-                                                'Continuation2':opt2,
-                                                'Label':label
-                                                })
+                            story_list_dict.append({'StoryID':story_id,
+                                                    'Sentence1':sentences[0],
+                                                    'Sentence2':sentences[1],
+                                                    'Sentence3':sentences[2],
+                                                    'Sentence4':sentences[3],
+                                                    'Continuation1':opt1,
+                                                    'Continuation2':opt2,
+                                                    'Label':label
+                                                    })
+                            # print(story_list_dict)
             except:
+                print('\nError:',line)
                 pass
     return story_list_dict
 
@@ -96,4 +104,4 @@ def get_data(src_path):
 if __name__ == '__main__':
     data = get_data(sys.argv[1])
     df = pd.DataFrame(data)
-    df.to_csv(sys.argv[2],sep='\t', index=False)
+    # df.to_csv(sys.argv[2],sep='\t', index=False)
