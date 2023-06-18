@@ -18,7 +18,7 @@ def get_sentences(sentences):
 '''
 Extract data following a protagonist
 in subject or object position.
-Using crosslingual coreference and spacy
+Using (loose) (crosslingual) coreference
 '''
 
 # 1. Check if at least 6 sentences
@@ -28,17 +28,21 @@ def get_data(src_path):
     if torch.cuda.is_available():
         device = 0
         model_name = 'info_xlm'
+        spacy_model = "nl_core_news_sm"
     else:
         device = -1
         model_name = 'minilm'
+        spacy_model = "nl_core_news_lg"
+        
     print('\nUsing device:', device)
     print('\nUsing model:', model_name)
+    print('\nUsing spacy model:', spacy_model)
     
     story_list_dict = []
     n = 6
 
     spacy.prefer_gpu()
-    nlp = spacy.load("nl_core_news_sm") # ("nl_core_news_lg")
+    nlp = spacy.load(spacy_model)
     nlp.add_pipe("xx_coref", config={"chunk_size": 2500, "chunk_overlap": 2
                                         , "model_name": model_name
                                         , "device": device
