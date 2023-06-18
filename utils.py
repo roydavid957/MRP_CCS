@@ -82,13 +82,13 @@ def load_samples(line, nlp):
   return line_true,line_false
 
 def load_cmcnc_samples(line,nlp):
-  input_sentences = line['input'].split('|')
+  input_sentences = line[1].split('|')
   all_event_idx = [1]*len(input_sentences)
   input_lines = [{'sent': sent+'.', 'event': event} for sent, event in zip(input_sentences, all_event_idx)]
   true_target_line = {'sent': line['target']+'.', 'event': 1}
-  line_true = [line['StoryID'],input_lines,true_target_line,1]
-  neg_sentences = line['neg'].split('|')
-  false_lines = [[line['StoryID'],input_lines,{'sent':sent,'event':1},0] for sent in neg_sentences]
+  line_true = [line[0],input_lines,true_target_line,1]
+  neg_sentences = line[-1].split('|')
+  false_lines = [[line[0],input_lines,{'sent':sent,'event':1},0] for sent in neg_sentences]
   return line_true,false_lines
 
 class Sentence():
@@ -170,7 +170,10 @@ def load_all_samples(src_path:str, args, spacy_model="en_core_web_sm"):
           sample_false = Sample(line_false)
           samples.append(sample_false)
     label_list = set(sample.label for sample in samples)
-    labels = list(data['AnswerRightEnding']) if args.data_set.lower() == "sct" else list(data['Label'])    # save correct labels for evaluation
+    if args.data_set.lower() == 'sct' or args.data_set.lower() == 'nct':
+      labels = list(data['AnswerRightEnding']) if args.data_set.lower() == "sct" else list(data['Label'])    # save correct labels for evaluation
+    else:
+      labels = []
     return samples, list(label_list), labels
 
 '''
@@ -211,3 +214,40 @@ def train_eval(X_train, y_train, X_test, y_test):
     #   print(cross_val_score(clf, vectorized_X_train, y_train, cv=5))
       return acc_score_list, folds
       # return cross_val_score(clf, scaled_X_train, y_train, cv=5), []
+    
+
+def get_y_proba_dict(samples, y_pred_proba):
+  y_pred_dict = dict()
+  for sample, y_pred in zip(samples,y_pred_proba):
+      if sample.id in y_pred_dict.keys():
+          y_pred_dict[sample.id][str(sample.label)] = y_pred
+      else:
+          y_pred_dict[sample.id] = dict()
+          y_pred_dict[sample.id][str(sample.label)] = y_pred
+  return y_pred_dict
+
+def eval_proba(y_pred_dict, labels=[]):
+  y_pred_list = []
+  if labels == []:
+     labels = [np.nan]*len(list(y_pred_dict.values()))
+     true_label = 1
+     false_label = 0
+     y_true = [1]*len(labels)
+     convert_labels = False
+  else:
+     y_true = labels
+     convert_labels = True
+  for y_proba, label in zip(y_pred_dict.values(), labels):
+      if convert_labels:                            # convert labels for
+        true_label = 1 if int(label) == 1 else 2    # balanced cls report
+        false_label = 2 if int(label) == 1 else 1
+      if len(y_proba.keys()) >1:  # for cv, because of the fold's data splits
+                                  # exclude instance(s) with one PFS
+          if y_proba['1'][1] == y_proba['0'][1]:
+              y_pred = int(np.random.choice([0,1]))
+          elif y_proba['1'][1] > y_proba['0'][1]:
+              y_pred = true_label
+          elif y_proba['1'][1] < y_proba['0'][1]:
+              y_pred = false_label
+          y_pred_list.append(y_pred)
+  return y_pred_list, y_true

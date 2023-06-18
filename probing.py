@@ -3,7 +3,7 @@ import torch
 import argparse
 import numpy as np
 from transformers import AutoTokenizer, AutoModel, AutoConfig
-from utils import load_all_samples, train_eval
+from utils import load_all_samples, train_eval, get_y_proba_dict, eval_proba
 from sklearn.metrics import classification_report, accuracy_score
 
 '''
@@ -87,7 +87,8 @@ def main():
                       help='the name of the model (checkpoint) used for extracting representations.')
     parser.add_argument('-tr', '--train_file')
     parser.add_argument('-ts', '--test_file', default='', help='Leave empty for k-fold cv')
-    parser.add_argument('-ds', '--data_set', help='Specify dataset for dataloader: "SCT" (Story Cloze Task), "NCT" (Narrative Cloze Task), "CMCNC" (Coherent Multiple Choice Narrative Cloze)')
+    parser.add_argument('-ds', '--data_set', help='Specify dataset for dataloader: "SCT" (Story Cloze Task), "NCT" (Narrative Cloze Task), "CMCNC" (Coherent Multiple Choice Narrative Cloze)' 
+                        ,default='')
     parser.add_argument('-o', '--output_file',
                       help='absolute path to output file for classification report')
     parser.add_argument('-l', '--lang',
@@ -116,13 +117,6 @@ def main():
     else:
       valid_samples, test_label_list, valid_labels = load_all_samples(args.test_file, args, spacy_model)   # train and test source files
     all_labels = list(set(test_label_list).union(set(labels_list)))
-
-    # Check
-    # print(train_samples[0])
-    # print(train_samples[1])
-    # print(f'\n{valid_samples[0]}')
-    # print(valid_samples[1])
-    # exit()
 
     model_config = AutoConfig.from_pretrained(args.model_ckpt)    
     args.num_hidden_layers = model_config.num_hidden_layers
@@ -157,54 +151,58 @@ def main():
         if args.test_file == '':        # per fold for cv
           cls_report_proba = []
           for fold in y_pred_proba:
-              y_pred_dict = dict()    # get the possible final sequence (PFS) probabilities
-                                      # per story (ID)
-              for sample, y_pred in zip(np.array(train_samples)[fold['X']],fold['Y']):
-                  if sample.id in y_pred_dict.keys():
-                      y_pred_dict[sample.id][str(sample.label)] = y_pred
-                  else:
-                      y_pred_dict[sample.id] = dict()
-                      y_pred_dict[sample.id][str(sample.label)] = y_pred
+              y_pred_dict = get_y_proba_dict(np.array(train_samples)[fold['X']],fold['Y'])
+              # y_pred_dict = dict()    # get the possible final sequence (PFS) probabilities
+              #                         # per story (ID)
+              # for sample, y_pred in zip(np.array(train_samples)[fold['X']],fold['Y']):
+              #     if sample.id in y_pred_dict.keys():
+              #         y_pred_dict[sample.id][str(sample.label)] = y_pred
+              #     else:
+              #         y_pred_dict[sample.id] = dict()
+              #         y_pred_dict[sample.id][str(sample.label)] = y_pred
 
-              y_pred_list = []
-              for y_proba in y_pred_dict.values():
-                  if len(y_proba.keys()) >1 and '0':  # for cv, because of the fold's data splits
-                                                      # exclude instance(s) with one PFS
-                      if y_proba['1'][1] == y_proba['0'][1]:
-                         y_pred = int(np.random.choice([0,1]))
-                      elif y_proba['1'][1] > y_proba['0'][1]:
-                         y_pred = 1
-                      elif y_proba['1'][1] < y_proba['0'][1]:
-                         y_pred = 0
-                      # y_pred = 1 if y_proba['1'][1] >= y_proba['0'][1] else 0     # Choose PFS
-                      y_pred_list.append(y_pred)
-              y_true = [1]*len(y_pred_list)
+              y_pred_list, y_true = eval_proba(y_pred_dict)
+              # y_pred_list = []
+              # for y_proba in y_pred_dict.values():
+              #     if len(y_proba.keys()) >1 and '0':  # for cv, because of the fold's data splits
+              #                                         # exclude instance(s) with one PFS
+              #         if y_proba['1'][1] == y_proba['0'][1]:
+              #            y_pred = int(np.random.choice([0,1]))
+              #         elif y_proba['1'][1] > y_proba['0'][1]:
+              #            y_pred = 1
+              #         elif y_proba['1'][1] < y_proba['0'][1]:
+              #            y_pred = 0
+              #         # y_pred = 1 if y_proba['1'][1] >= y_proba['0'][1] else 0     # Choose PFS
+              #         y_pred_list.append(y_pred)
+              # y_true = [1]*len(y_pred_list)
+
               # cls_report_proba = classification_report(y_true, y_pred_list, output_dict=True)
               cls_report_proba.append(accuracy_score(y_true, y_pred_list))
-        else:
-          y_pred_dict = dict()
-          for sample, y_pred in zip(valid_samples,y_pred_proba):
-              if sample.id in y_pred_dict.keys():
-                  y_pred_dict[sample.id][str(sample.label)] = y_pred
-              else:
-                  y_pred_dict[sample.id] = dict()
-                  y_pred_dict[sample.id][str(sample.label)] = y_pred
+        elif args.data_set.lower() == 'sct' or args.data_set.lower() == 'nct':
+          y_pred_dict = get_y_proba_dict(valid_samples,y_pred_proba)
+          # y_pred_dict = dict()
+          # for sample, y_pred in zip(valid_samples,y_pred_proba):
+          #     if sample.id in y_pred_dict.keys():
+          #         y_pred_dict[sample.id][str(sample.label)] = y_pred
+          #     else:
+          #         y_pred_dict[sample.id] = dict()
+          #         y_pred_dict[sample.id][str(sample.label)] = y_pred
 
           # cls report using imbalanced labels
           # i.e. only correct label being 1
           # only for eval
-          y_pred_list = []
-          for y_proba in y_pred_dict.values():
-              if y_proba['1'][1] == y_proba['0'][1]:
-                  y_pred = int(np.random.choice([0,1]))
-              elif y_proba['1'][1] > y_proba['0'][1]:
-                  y_pred = 1
-              elif y_proba['1'][1] < y_proba['0'][1]:
-                  y_pred = 0
-              # y_pred = 1 if y_proba['1'][1] >= y_proba['0'][1] else 0
-              # y_pred = 0 if y_proba['0'][1] >= y_proba['1'][1] else 1
-              y_pred_list.append(y_pred)
-          y_true = [1]*len(y_pred_list)
+          y_pred_list, y_true = eval_proba(y_pred_dict)
+          # y_pred_list = []
+          # for y_proba in y_pred_dict.values():
+          #     if y_proba['1'][1] == y_proba['0'][1]:
+          #         y_pred = int(np.random.choice([0,1]))
+          #     elif y_proba['1'][1] > y_proba['0'][1]:
+          #         y_pred = 1
+          #     elif y_proba['1'][1] < y_proba['0'][1]:
+          #         y_pred = 0
+          #     y_pred_list.append(y_pred)
+          # y_true = [1]*len(y_pred_list)
+
           print(classification_report(y_true, y_pred_list))
           cls_report_proba = classification_report(y_true, y_pred_list, output_dict=True)
           # print(cls_report_proba)
@@ -212,20 +210,20 @@ def main():
           # cls report using original (balanced) labels
           # i.e. correct can be label 1 or 2
           # only for eval as a check
-          y_pred_list_og = []
-          for y_proba, label in zip(y_pred_dict.values(), valid_labels):
-              true_label = 1 if int(label) == 1 else 2
-              false_label = 2 if int(label) == 1 else 1
-              if y_proba['1'][1] == y_proba['0'][1]:
-                  y_pred_og = int(np.random.choice([0,1]))
-              elif y_proba['1'][1] > y_proba['0'][1]:
-                  y_pred_og = 1
-              elif y_proba['1'][1] < y_proba['0'][1]:
-                  y_pred_og = 0
-              y_pred_og = true_label if y_proba['1'][1] >= y_proba['0'][1] else false_label
-              # y_pred_og = false_label if y_proba['0'][1] >= y_proba['1'][1] else true_label
-              y_pred_list_og.append(y_pred_og)
+          y_pred_list_og, y_true = eval_proba(y_pred_dict, valid_labels)
+          # y_pred_list_og = []
+          # for y_proba, label in zip(y_pred_dict.values(), valid_labels):
+          #     true_label = 1 if int(label) == 1 else 2
+          #     false_label = 2 if int(label) == 1 else 1
+          #     if y_proba['1'][1] == y_proba['0'][1]:
+          #         y_pred_og = int(np.random.choice([true_label,false_label]))
+          #     elif y_proba['1'][1] > y_proba['0'][1]:
+          #         y_pred_og = true_label
+          #     elif y_proba['1'][1] < y_proba['0'][1]:
+          #         y_pred_og = false_label
+          #     y_pred_list_og.append(y_pred_og)
           print(classification_report(valid_labels, y_pred_list_og))
+          # cls_report_proba = classification_report(y_true, y_pred_list_og, output_dict=True)
           # print(classification_report(valid_labels, y_pred_list_og, output_dict=True))
         
         print(cls_report_proba)
