@@ -6,9 +6,8 @@ import numpy as np
 import pandas as pd
 import torch
 
-def get_sentences(doc):
+def get_sentences(sentences):
     punct_list = ['.', '?', '!']
-    sentences = list(doc.sents)
     for idx, sent in sentences:
         if sent[-1] not in punct_list:
             new_sent = (' ').join([sent,sentences[idx+1]])
@@ -51,7 +50,7 @@ def get_data(src_path):
             if line['text'] != '':
                 doc = nlp(line['text'])
                 if len(list(doc.sents)) >= n:
-                    sentences = get_sentences(doc)
+                    sentences = get_sentences(list(doc.sents))
                     if len(sentences) >= n:
 
                         # print('\nCoref clusters:',doc._.coref_clusters)
