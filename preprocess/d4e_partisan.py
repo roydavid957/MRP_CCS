@@ -104,4 +104,4 @@ def get_data(src_path):
 if __name__ == '__main__':
     data = get_data(sys.argv[1])
     df = pd.DataFrame(data)
-    # df.to_csv(sys.argv[2],sep='\t', index=False)
+    df.to_csv(sys.argv[2],sep='\t', index=False)
