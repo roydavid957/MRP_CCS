@@ -25,10 +25,10 @@ Using crosslingual coreference and spacy
 # 3. Check if cluster heads are protagonist
 def get_data(src_path):
     if torch.cuda.is_available():
-        device = "cuda"
+        device = 0
         model_name = 'info_xlm'
     else:
-        device = "cpu"
+        device = -1
         model_name = 'minilm'
     print('\nUsing device:', device)
     print('\nUsing model:', model_name)
