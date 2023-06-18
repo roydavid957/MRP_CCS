@@ -50,7 +50,8 @@ def get_data(src_path):
             if line['text'] != '':
                 doc = nlp(line['text'])
                 if len(list(doc.sents)) >= n:
-                    sentences = get_sentences(list(doc.sents))
+                    doc_sents = [str(sent) for sent in doc.sents]
+                    sents = get_sentences(doc_sents)
                     if len(sentences) >= n:
 
                         # print('\nCoref clusters:',doc._.coref_clusters)
