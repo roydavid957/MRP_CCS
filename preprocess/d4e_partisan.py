@@ -8,7 +8,7 @@ import torch
 
 def get_sentences(sentences):
     punct_list = ['.', '?', '!']
-    for idx, sent in sentences:
+    for idx, sent in enumerate(sentences):
         if sent[-1] not in punct_list:
             new_sent = (' ').join([sent,sentences[idx+1]])
             sentences[idx] = new_sent.replace('  ', ' ')
