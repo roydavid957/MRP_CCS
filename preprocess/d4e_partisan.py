@@ -48,7 +48,7 @@ def get_data(src_path):
         
         for line in f:
             line = json.loads(line)
-            try:
+            if line['text'] != '':
                 doc = nlp(line['text'])
                 if len(list(doc.sents)) >= n:
                     sentences = get_sentences(doc)
@@ -95,9 +95,6 @@ def get_data(src_path):
                                                     'Label':label
                                                     })
                             # print(story_list_dict)
-            except:
-                print('\nError:',line)
-                pass
     return story_list_dict
 
 
