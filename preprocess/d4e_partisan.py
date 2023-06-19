@@ -69,7 +69,11 @@ def get_data(src_path):
                         # print('\nCoref text:',doc._.resolved_text)
                         # print('\nCoref heads:',doc._.cluster_heads)
 
-                        coref_doc = nlp(doc._.resolved_text)
+                        try:
+                            coref_doc = nlp(doc._.resolved_text)
+                        except IndexError as e:
+                            print(f'\n{e}\n{line}')
+                            next(f)
                         nsubj = [str(tok) for tok in coref_doc if tok.dep_ == "subj" in tok.dep_ or "obj" in tok.dep_ or "nmod" in tok.dep_]
                         ents = [str(ent) for ent in coref_doc.ents if ent.label_ == "PERSON"]
                         # print('\nEntities:',ents)
