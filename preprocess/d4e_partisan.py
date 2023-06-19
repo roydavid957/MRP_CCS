@@ -10,9 +10,12 @@ def get_sentences(sentences):
     punct_list = ['.', '?', '!']
     for idx, sent in enumerate(sentences):
         if sent[-1] not in punct_list:
-            new_sent = (' ').join([sent,sentences[idx+1]]) if len(sentences) >= idx+1 else sent+'.'
+            if len(sentences) >= idx+1:
+                new_sent = (' ').join([sent,sentences[idx+1]])
+                del sentences[idx+1]
+            else:
+                new_sent = sent+'.'
             sentences[idx] = new_sent.replace('  ', ' ')
-            del sentences[idx+1]
     return sentences
 
 '''
@@ -33,7 +36,7 @@ def get_data(src_path):
         device = -1
         model_name = 'minilm'
         spacy_model = "nl_core_news_lg"
-        
+
     print('\nUsing device:', device)
     print('\nUsing model:', model_name)
     print('\nUsing spacy model:', spacy_model)
