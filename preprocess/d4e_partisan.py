@@ -55,7 +55,11 @@ def get_data(src_path):
         for line in f:
             line = json.loads(line)
             if line['text'] != '':
-                doc = nlp(line['text'])
+                try:
+                    doc = nlp(line['text'])
+                except IndexError as e:
+                    print(f'\n{e}\n{line}')
+                    pass
                 if len(list(doc.sents)) >= n:
                     doc_sents = [str(sent) for sent in doc.sents]
                     # sents = get_sentences(doc_sents)
