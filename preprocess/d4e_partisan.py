@@ -28,8 +28,10 @@ Using (loose) (crosslingual) coreference
 def get_data(src_path):
     if torch.cuda.is_available():
         device = 0
-        model_name = 'info_xlm'
-        spacy_model = "nl_core_news_lg"
+        # model_name = 'info_xlm'
+        model_name = 'minilm'
+        # spacy_model = "nl_core_news_lg"
+        spacy_model = "nl_core_news_sm"
     else:
         device = -1
         model_name = 'minilm'
