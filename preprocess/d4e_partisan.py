@@ -59,7 +59,7 @@ def get_data(src_path):
                     doc = nlp(line['text'])
                 except IndexError as e:
                     print(f'\n{e}\n{line}')
-                    pass
+                    next(f)
                 if len(list(doc.sents)) >= n:
                     doc_sents = [str(sent) for sent in doc.sents]
                     # sents = get_sentences(doc_sents)
