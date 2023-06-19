@@ -9,9 +9,13 @@ from sklearn.model_selection import cross_val_score, StratifiedKFold
 import numpy as np
 
 def get_verbs(doc,vb=False)->list:
-  if vb:
-      return [f"{tok}|{tok.lemma_}|{tok.dep_}|{tok.idx}|{tok.idx+len(tok)}|{tok.pos_}|{tok.tag_}" for tok in doc if tok.pos_ == "VERB" or "VB" in tok.tag_]
-  return [f"{tok}|{tok.lemma_}|{tok.dep_}|{tok.idx}|{tok.idx+len(tok)}|{tok.pos_}|{tok.tag_}" for tok in doc if tok.pos_ == "VERB" or "VB" in tok.tag_ or "amod" in tok.dep_ or "prep" in tok.dep_ or "UH" in tok.tag_ or "ROOT" in tok.dep_]
+  if vb:  # verbs only
+    verbs = [f"{tok}|{tok.lemma_}|{tok.dep_}|{tok.idx}|{tok.idx+len(tok)}|{tok.pos_}|{tok.tag_}" for tok in doc if tok.pos_ == "VERB" or "VB" in tok.tag_]
+  else:
+    verbs = [f"{tok}|{tok.lemma_}|{tok.dep_}|{tok.idx}|{tok.idx+len(tok)}|{tok.pos_}|{tok.tag_}" for tok in doc if tok.pos_ == "VERB" or "VB" in tok.tag_ or "amod" in tok.dep_ or "prep" in tok.dep_ or "UH" in tok.tag_ or "ROOT" in tok.dep_]
+    if len(verbs) == 0:
+      verbs = [f"{tok}|{tok.lemma_}|{tok.dep_}|{tok.idx}|{tok.idx+len(tok)}|{tok.pos_}|{tok.tag_}" for tok in doc]
+  return verbs
 
 def get_word_idx(sent):
   offset=0
@@ -170,7 +174,7 @@ def load_all_samples(src_path:str, args, spacy_model="en_core_web_sm"):
           sample_false = Sample(line_false)
           samples.append(sample_false)
     label_list = set(sample.label for sample in samples)
-    if args.data_set.lower() == 'sct' or args.data_set.lower() == 'nct':
+    if args.data_set.lower() != 'cmcnc':
       labels = list(data['AnswerRightEnding']) if args.data_set.lower() == "sct" else list(data['Label'])    # save correct labels for evaluation
     else:
       labels = []
