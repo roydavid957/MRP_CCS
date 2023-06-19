@@ -236,7 +236,6 @@ def eval_proba(y_pred_dict, labels=[]):
      labels = [np.nan]*len(list(y_pred_dict.values()))
      true_label = 1
      false_label = 0
-     y_true = [1]*len(labels)
      convert_labels = False
   else:
      y_true = labels
@@ -254,4 +253,6 @@ def eval_proba(y_pred_dict, labels=[]):
           elif y_proba['1'][1] < y_proba['0'][1]:
               y_pred = false_label
           y_pred_list.append(y_pred)
+  if not convert_labels:
+    y_true = [1]*len(y_pred_list)
   return y_pred_list, y_true
