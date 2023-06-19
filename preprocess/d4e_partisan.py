@@ -1,8 +1,6 @@
 import sys
-import json
 import spacy
 import crosslingual_coreference
-import numpy as np
 import pandas as pd
 import torch
 
@@ -31,11 +29,11 @@ def get_data(src_path):
     if torch.cuda.is_available():
         device = 0
         model_name = 'info_xlm'
-        spacy_model = "nl_core_news_sm"
+        spacy_model = "nl_core_news_lg"
     else:
         device = -1
         model_name = 'minilm'
-        spacy_model = "nl_core_news_lg"
+        spacy_model = "nl_core_news_sm"
 
     print('\nUsing device:', device)
     print('\nUsing model:', model_name)
@@ -50,67 +48,28 @@ def get_data(src_path):
                                         , "model_name": model_name
                                         , "device": device
                                         })
-    with open(src_path,'r') as f:
+    data = pd.read_csv(src_path,sep='\t')
         
-        for line in f:
-            line = json.loads(line)
-            if line['text'] != '':
-                try:
-                    doc = nlp(line['text'])
-                except IndexError as e:
-                    print(f'\n{e}\n{line}')
-                    next(f)
-                if len(list(doc.sents)) >= n:
-                    doc_sents = [str(sent) for sent in doc.sents]
-                    # sents = get_sentences(doc_sents)
-                    if len(doc_sents) >= n:
+    for idx,row in data.iterrows():
+        sents = [row[1],row[2],row[3],row[4]]
+        text = (' ').join(sents)
 
-                        # print('\nCoref clusters:',doc._.coref_clusters)
-                        # print('\nCoref text:',doc._.resolved_text)
-                        # print('\nCoref heads:',doc._.cluster_heads)
+        try:
+            coref_doc = nlp(text._.resolved_text)
+        except IndexError as e:
+            print(f'\n{e}\n{row}')
+            next(data)
 
-                        try:
-                            coref_doc = nlp(doc._.resolved_text)
-                        except IndexError as e:
-                            print(f'\n{e}\n{line}')
-                            next(f)
-                        nsubj = [str(tok) for tok in coref_doc if tok.dep_ == "subj" in tok.dep_ or "obj" in tok.dep_ or "nmod" in tok.dep_]
-                        ents = [str(ent) for ent in coref_doc.ents if ent.label_ == "PERSON"]
-                        # print('\nEntities:',ents)
-                        # print('\nsubj/obj:',nsubj)
-                        overlap = list(set([ent for subj in nsubj for ent in ents if subj in ent]))
-                        # print('\nOverlap:',overlap)
-                        coref_sents = [str(sent) for sent in coref_doc.sents]
-                        # coref_sentences = get_sentences(coref_doc)
-                        over_sents = list(set([idx for idx, sent in enumerate(coref_sents) for ent in overlap if ent in str(sent)]))
-                        # print('\nSents:',over_sents)
-                        if len(set(over_sents).intersection(set([0,1,2,3,4]))) > 0:
-                            story_id = line['id']
-                            # sentences = [str(sent) for sent in doc.sents]
-                            # cutoff = n-1 if sentences[n-2].endswith('.') else n
+        nsubj = [str(tok) for tok in coref_doc if tok.dep_ == "subj" in tok.dep_ or "obj" in tok.dep_ or "nmod" in tok.dep_]
+        ents = [str(ent) for ent in coref_doc.ents if ent.label_ == "PERSON"]
+        overlap = list(set([ent for subj in nsubj for ent in ents if subj in ent]))
 
-                            last_sents = doc_sents[n-1:]
-                            rand_sent = np.random.choice(last_sents)
-                            while len(rand_sent.split(' ')) < 1:
-                                rand_sent = np.random.choice(last_sents)
-                            label = np.random.choice([1,2])
-                            if label == 1:
-                                opt1 = doc_sents[n-2]
-                                opt2 = rand_sent
-                            elif label == 2:
-                                opt2 = doc_sents[n-2]
-                                opt1 = rand_sent
+        coref_sents = [str(sent) for sent in coref_doc.sents]
+        over_sents = list(set([idx for idx, sent in enumerate(coref_sents) for ent in overlap if ent in str(sent)]))
 
-                            story_list_dict.append({'StoryID':story_id,
-                                                    'Sentence1':doc_sents[0],
-                                                    'Sentence2':doc_sents[1],
-                                                    'Sentence3':doc_sents[2],
-                                                    'Sentence4':doc_sents[3],
-                                                    'Continuation1':opt1,
-                                                    'Continuation2':opt2,
-                                                    'Label':label
-                                                    })
-                            # print(story_list_dict)
+        if len(set(over_sents).intersection(set([0,1,2,3,4]))) > 0:
+            story_list_dict.append(row)
+            
     return story_list_dict
 
 
