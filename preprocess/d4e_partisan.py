@@ -58,8 +58,8 @@ def get_data(src_path):
                 doc = nlp(line['text'])
                 if len(list(doc.sents)) >= n:
                     doc_sents = [str(sent) for sent in doc.sents]
-                    sents = get_sentences(doc_sents)
-                    if len(sentences) >= n:
+                    # sents = get_sentences(doc_sents)
+                    if len(doc_sents) >= n:
 
                         # print('\nCoref clusters:',doc._.coref_clusters)
                         # print('\nCoref text:',doc._.resolved_text)
@@ -72,31 +72,32 @@ def get_data(src_path):
                         # print('\nsubj/obj:',nsubj)
                         overlap = list(set([ent for subj in nsubj for ent in ents if subj in ent]))
                         # print('\nOverlap:',overlap)
-                        coref_sentences = get_sentences(coref_doc)
-                        over_sents = list(set([idx for idx, sent in enumerate(coref_sentences) for ent in overlap if ent in str(sent)]))
+                        coref_sents = [str(sent) for sent in coref_doc.sents]
+                        # coref_sentences = get_sentences(coref_doc)
+                        over_sents = list(set([idx for idx, sent in enumerate(coref_sents) for ent in overlap if ent in str(sent)]))
                         # print('\nSents:',over_sents)
                         if len(set(over_sents).intersection(set([0,1,2,3,4]))) > 0:
                             story_id = line['id']
-                            sentences = [str(sent) for sent in doc.sents]
+                            # sentences = [str(sent) for sent in doc.sents]
                             # cutoff = n-1 if sentences[n-2].endswith('.') else n
 
-                            last_sents = sentences[n-1:]
+                            last_sents = doc_sents[n-1:]
                             rand_sent = np.random.choice(last_sents)
-                            while len(rand_sent.split(' ')) < 2:
+                            while len(rand_sent.split(' ')) < 1:
                                 rand_sent = np.random.choice(last_sents)
                             label = np.random.choice([1,2])
                             if label == 1:
-                                opt1 = sentences[n-2]
+                                opt1 = doc_sents[n-2]
                                 opt2 = rand_sent
                             elif label == 2:
-                                opt2 = sentences[n-2]
+                                opt2 = doc_sents[n-2]
                                 opt1 = rand_sent
 
                             story_list_dict.append({'StoryID':story_id,
-                                                    'Sentence1':sentences[0],
-                                                    'Sentence2':sentences[1],
-                                                    'Sentence3':sentences[2],
-                                                    'Sentence4':sentences[3],
+                                                    'Sentence1':doc_sents[0],
+                                                    'Sentence2':doc_sents[1],
+                                                    'Sentence3':doc_sents[2],
+                                                    'Sentence4':doc_sents[3],
                                                     'Continuation1':opt1,
                                                     'Continuation2':opt2,
                                                     'Label':label
