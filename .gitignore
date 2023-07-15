@@ -3,6 +3,7 @@ jobscript*.sh
 *.png
 results/
 *.DS_Store
+preprocess/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
