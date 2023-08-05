@@ -11,6 +11,6 @@ Our results show that these PTLLMs can capture narrative coherence mostly when h
 - baseline.py: lexical overlap and SVM+tfidf baselines.
 
 ## Datasets
-- SCT; Story Cloze Test
+- SCT: Story Cloze Test
 - NCT: Narrative Cloze Task
 - NCT-Dutch: Narrative Cloze Task (Dutch version)
